@@ -9,6 +9,9 @@ export interface JobMatch {
   title: string;
   company: string;
   applyUrl: string;
+  description?: string;
+  location?: string;
+  salary?: string;
 }
 
 export interface PerplexityResponse {
@@ -24,4 +27,21 @@ export interface JobSearchResultsProps {
   isSearching: boolean;
   results: JobMatch[];
   error?: string;
+}
+
+export interface PerplexityApiStatus {
+  isOperational: boolean;
+  lastChecked: Date | null;
+  config: {
+    model: string;
+    temperature: number;
+    maxTokens: number;
+  };
+}
+
+export interface PerplexityTestResult {
+  isOperational: boolean;
+  message: string;
+  timestamp: Date;
+  details?: any;
 }

@@ -24,12 +24,36 @@ export default function JobSearchResults({ isSearching, results, error }: JobSea
                   rel="noopener noreferrer"
                   className="block p-3 rounded-lg bg-gray-800/50 hover:bg-gray-700/50 transition-colors duration-300"
                 >
-                  <div className="flex justify-between items-center">
-                    <div>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-grow">
                       <h4 className="text-blue-300 font-medium">{job.title}</h4>
                       <p className="text-gray-400 text-sm">{job.company}</p>
+                      
+                      {/* Additional information */}
+                      <div className="mt-2 space-y-1">
+                        {job.description && (
+                          <p className="text-gray-300 text-sm flex items-start">
+                            <Info className="w-3 h-3 text-gray-400 mr-1 mt-1" />
+                            <span>{job.description}</span>
+                          </p>
+                        )}
+                        
+                        {job.location && (
+                          <p className="text-gray-300 text-sm flex items-center">
+                            <MapPin className="w-3 h-3 text-gray-400 mr-1" />
+                            <span>{job.location}</span>
+                          </p>
+                        )}
+                        
+                        {job.salary && (
+                          <p className="text-gray-300 text-sm flex items-center">
+                            <DollarSign className="w-3 h-3 text-gray-400 mr-1" />
+                            <span>{job.salary}</span>
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <ExternalLink className="w-4 h-4 text-gray-400" />
+                    <ExternalLink className="w-4 h-4 text-gray-400 mt-1 ml-2 flex-shrink-0" />
                   </div>
                 </a>
               ))}

@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Building, MapPin, FileText, ListChecks, CircleDollarSign, Briefcase } from 'lucide-react';
+import { Building, MapPin, FileText, ListChecks, CircleDollarSign, Briefcase, AlertCircle } from 'lucide-react';
 import GradientText from './GradientText';
 import LoadingDots from './LoadingDots';
 import type { JobProfileItem } from '@/lib/types';
 import { PerplexityService } from '../services/perplexity';
 import JobSearchResults from './JobSearchResults';
-import type { JobMatch } from '../types/perplexity';
+import type { JobMatch, PerplexityApiStatus } from '../types/perplexity';
+import PerplexityApiTester from './PerplexityApiTester';
 
 // Load Perplexity API key from environment variable
 const perplexityApiKey = process.env.NEXT_PUBLIC_PERPLEXITY_API_KEY;
@@ -198,6 +199,24 @@ export default function JobProfile() {
     );
   };
 
+  // Render API status message if there's an error
+  const renderApiStatus = () => {
+    if (!perplexityApiKey) {
+      return (
+        <div className="mt-4 p-3 bg-yellow-900/30 border border-yellow-800/50 rounded-lg">
+          <div className="flex items-center">
+            <AlertCircle className="w-5 h-5 text-yellow-400 mr-2" />
+            <p className="text-yellow-300 text-sm">
+              Perplexity API key is not configured. Job search functionality is disabled.
+            </p>
+          </div>
+        </div>
+      );
+    }
+    
+    return null;
+  };
+
   return (
     <>
       <div className="rounded-lg bg-gray-900/50 border border-gray-800 overflow-hidden transition-all duration-300 hover:border-blue-800/30">
@@ -305,6 +324,11 @@ export default function JobProfile() {
           results={searchResults}
           error={searchError || undefined}
         />
+      )}
+
+      {/* API Tester (for development and testing) */}
+      {process.env.NODE_ENV === 'development' && (
+        <PerplexityApiTester />
       )}
     </>
   );

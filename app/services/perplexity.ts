@@ -3,6 +3,10 @@ import { JobProfileItem } from '@/lib/types';
 
 export class PerplexityService {
   private config: PerplexityConfig;
+  private apiStatus: { isOperational: boolean; lastChecked: Date | null } = {
+    isOperational: false,
+    lastChecked: null
+  };
 
   constructor(config: PerplexityConfig) {
     this.config = config;
@@ -121,7 +125,92 @@ export class PerplexityService {
 
     } catch (error) {
       console.error('Error searching jobs:', error);
+      
+      // Update API status on error
+      this.apiStatus.isOperational = false;
+      this.apiStatus.lastChecked = new Date();
+      
       throw error;
     }
+  }
+
+  /**
+   * Test the Perplexity API connection
+   * @returns Object with test results
+   */
+  public async testConnection(): Promise<{
+    isOperational: boolean;
+    message: string;
+    timestamp: Date;
+    details?: any;
+  }> {
+    try {
+      // Simple test query
+      const response = await fetch('https://api.perplexity.ai/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.config.apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: this.config.model || 'sonar',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a helpful assistant.'
+            },
+            {
+              role: 'user',
+              content: 'Return a simple JSON response with the key "status" and value "operational"'
+            }
+          ],
+          max_tokens: 100,
+          temperature: 0.1
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.statusText} (${response.status})`);
+      }
+
+      const data = await response.json();
+      
+      // Update API status
+      this.apiStatus.isOperational = true;
+      this.apiStatus.lastChecked = new Date();
+      
+      return {
+        isOperational: true,
+        message: 'Perplexity API connection successful',
+        timestamp: new Date(),
+        details: data
+      };
+    } catch (error) {
+      console.error('Perplexity API test failed:', error);
+      
+      // Update API status on error
+      this.apiStatus.isOperational = false;
+      this.apiStatus.lastChecked = new Date();
+      
+      return {
+        isOperational: false,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date()
+      };
+    }
+  }
+
+  /**
+   * Get the current API status
+   */
+  public getApiStatus() {
+    return {
+      ...this.apiStatus,
+      config: {
+        model: this.config.model,
+        temperature: this.config.temperature,
+        maxTokens: this.config.maxTokens
+      }
+    };
   }
 }

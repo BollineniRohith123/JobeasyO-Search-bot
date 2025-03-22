@@ -1,7 +1,25 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import LoadingDots from './LoadingDots';
 
 export default function SearchLoadingAnimation() {
+  const [currentStep, setCurrentStep] = useState(0);
+  const steps = [
+    'Connecting to Perplexity API...',
+    'Analyzing your profile...',
+    'Searching job databases...',
+    'Matching with opportunities...',
+    'Finding perfect matches...',
+    'Retrieving application links...'
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentStep(prev => (prev + 1) % steps.length);
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="flex flex-col items-center justify-center py-8 space-y-4">
       <div className="relative">
@@ -15,11 +33,22 @@ export default function SearchLoadingAnimation() {
         <p className="text-blue-300 font-medium animate-pulse">
           AI Job Search in Progress
         </p>
-        <p className="text-gray-400 text-sm flex flex-col items-center space-y-1">
-          <span>Analyzing your profile</span>
-          <span>Matching with opportunities</span>
-          <span>Finding perfect matches</span>
-        </p>
+        <div className="text-gray-400 text-sm flex flex-col items-center space-y-1">
+          {steps.map((step, index) => (
+            <span 
+              key={index} 
+              className={`transition-all duration-300 ${
+                index === currentStep 
+                  ? 'text-blue-300 font-medium scale-105' 
+                  : index < currentStep 
+                    ? 'text-green-400 line-through opacity-70' 
+                    : 'opacity-50'
+              }`}
+            >
+              {step}
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   );
