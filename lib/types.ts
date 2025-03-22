@@ -143,3 +143,34 @@ export interface OrderDetailsData {
   items: OrderItem[];
   totalAmount: number;
 }
+
+// For our job profile component
+export interface JobSkill {
+  name: string;
+  level?: string;
+}
+
+export interface JobProfileItem {
+  skills: string[];
+  experience: string;
+  yearsOfExperience: string;
+  preferredIndustries: string[];
+  preferredRoles: string[];
+  locationPreference: string;
+  employmentTypes: string[];  // Contract/Full time/Freelance
+  remotePreference: string;  // Remote/Hybrid/On-site
+  salaryRange: {
+    min: number;
+    max: number;
+    currency: string;
+  };
+  targetRoles: string[];     // Specific roles planning to apply for
+  suggestedRoles: string[];  // AI suggested roles based on experience
+  currentStatus: string;     // Actively looking, Open to opportunities, etc.
+  additionalNotes: string;
+  techStack: string[];       // Specific technologies/frameworks
+}
+
+export interface JobProfileData {
+  profile: JobProfileItem;
+}
