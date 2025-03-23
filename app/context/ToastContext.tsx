@@ -1,49 +1,61 @@
-"use client";
-
+'use client';
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { ToastContainer, ToastType } from '@/app/components/Toast';
+import Toast, { ToastType } from '../components/Toast';
+
+interface ToastItem {
+  id: string;
+  message: string;
+  type: ToastType;
+  duration?: number;
+}
 
 interface ToastContextType {
-  showToast: (message: string, type: ToastType) => void;
+  showToast: (message: string, type: ToastType, duration?: number) => void;
+  hideToast: (id: string) => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
-interface Toast {
-  id: number;
-  message: string;
-  type: ToastType;
-}
-
 export function ToastProvider({ children }: { children: React.ReactNode }) {
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
 
-  const removeToast = useCallback((id: number) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  const showToast = useCallback((message: string, type: ToastType, duration = 5000) => {
+    const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    setToasts(prev => [...prev, { id, message, type, duration }]);
+    
+    // Auto-remove toast after duration
+    setTimeout(() => {
+      hideToast(id);
+    }, duration + 300); // Add 300ms for exit animation
   }, []);
 
-  const showToast = useCallback((message: string, type: ToastType) => {
-    const id = Date.now();
-    setToasts((prev) => [...prev, { id, message, type }]);
-
-    // Auto-remove toast after 5 seconds (includes animation time)
-    setTimeout(() => {
-      removeToast(id);
-    }, 5000);
+  const hideToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
   }, []);
 
   return (
-    <ToastContext.Provider value={{ showToast }}>
+    <ToastContext.Provider value={{ showToast, hideToast }}>
       {children}
-      <ToastContainer toasts={toasts} removeToast={removeToast} />
+      <div className="fixed top-4 right-4 z-50 space-y-2 pointer-events-none">
+        {toasts.map((toast) => (
+          <div key={toast.id} className="pointer-events-auto">
+            <Toast
+              message={toast.message}
+              type={toast.type}
+              onClose={() => hideToast(toast.id)}
+              duration={toast.duration}
+            />
+          </div>
+        ))}
+      </div>
     </ToastContext.Provider>
   );
 }
 
-export const useToast = () => {
+export function useToast() {
   const context = useContext(ToastContext);
   if (context === undefined) {
     throw new Error('useToast must be used within a ToastProvider');
   }
   return context;
-};
+}

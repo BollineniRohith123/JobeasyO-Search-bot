@@ -1,5 +1,6 @@
-import { ClientToolImplementation } from 'ultravox-client';
+import { ClientToolImplementation, Role } from 'ultravox-client';
 import type { JobProfileItem } from '@/lib/types';
+import { toggleMute } from './callFunctions';
 
 // Client-implemented tool for Job Profile
 export const updateJobProfileTool: ClientToolImplementation = (parameters) => {
@@ -53,5 +54,20 @@ export const updateJobProfileTool: ClientToolImplementation = (parameters) => {
   } catch (error) {
     console.error("Error processing profile update:", error);
     return "Failed to update job profile: " + (error instanceof Error ? error.message : String(error));
+  }
+};
+
+// Add the toggleMic function for use in the MicToggleButton component
+export const toggleMic = async (role: Role): Promise<boolean> => {
+  try {
+    toggleMute(role);
+    
+    // Return true to indicate success
+    return true;
+  } catch (error) {
+    console.error(`Error toggling ${role === Role.USER ? 'microphone' : 'speaker'}:`, error);
+    
+    // Return false to indicate failure
+    return false;
   }
 };

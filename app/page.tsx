@@ -420,7 +420,7 @@ export default function Home() {
                           <XCircle size={20} />
                         </button>
                       </div>
-                      <div className="bg-black/50 rounded-xl p-6 fade-in-up delay-200">
+                      <div className="bg-black/50 rounded-xl p-6 fade-in-up delay-200 border border-gray-800/50 backdrop-blur-md">
                         <ConversationSummary 
                           profile={latestProfile}
                           onSearchJobs={handleSearchJobs}
