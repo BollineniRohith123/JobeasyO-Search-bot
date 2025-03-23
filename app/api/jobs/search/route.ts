@@ -3,21 +3,21 @@ import { PerplexityService } from '@/app/services/perplexity';
 import { JobMatch } from '@/app/types/perplexity';
 import { JobProfileItem } from '@/lib/types';
 
-export const runtime = 'edge';
-export const revalidate = 0;
-
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
-  });
-}
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  if (req.method === 'OPTIONS') {
+    return new NextResponse(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      },
+    });
+  }
+
   try {
     // Check API key first
     const apiKey = process.env.PERPLEXITY_API_KEY;
@@ -90,7 +90,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Job search service is temporarily unavailable. Please try again in a few minutes.'
+          error: 'Job search service is temporarily unavailable. Please try again in a few minutes.',
+          details: testResult.message
         },
         { status: 503 }
       );
@@ -125,17 +126,35 @@ export async function POST(req: NextRequest) {
 
     // Return appropriate response based on results
     if (enrichedResults.length === 0) {
-      return NextResponse.json({
-        success: true,
-        jobs: [],
-        message: 'No exact matches found. Try adjusting your search criteria.'
-      });
+      return new NextResponse(
+        JSON.stringify({
+          success: true,
+          jobs: [],
+          message: 'No exact matches found. Try adjusting your search criteria.'
+        }),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          }
+        }
+      );
     }
 
-    return NextResponse.json({
-      success: true,
-      jobs: enrichedResults
-    });
+    return new NextResponse(
+      JSON.stringify({
+        success: true,
+        jobs: enrichedResults
+      }),
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        }
+      }
+    );
 
   } catch (error) {
     console.error('Job search error:', error);
@@ -158,13 +177,19 @@ export async function POST(req: NextRequest) {
       ? 'Too many requests. Please try again in a few minutes.'
       : 'Unable to complete job search. Please try again.';
     
-    return NextResponse.json(
-      {
+    return new NextResponse(
+      JSON.stringify({
         success: false,
         error: message,
         details: errorMessage
-      },
-      { status }
+      }),
+      {
+        status,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        }
+      }
     );
   }
 }
