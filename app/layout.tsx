@@ -16,8 +16,9 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <head>
         <link rel="icon" type="image/svg+xml" href="/UVMark-White.svg" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
       </head>
-      <body className="bg-black text-white min-h-screen overflow-x-hidden antialiased">
+      <body className="bg-black text-white min-h-screen overflow-x-hidden antialiased selection:bg-blue-500/30 selection:text-white">
         <ErrorBoundary>
           <ToastProvider>
             <main className="relative min-h-screen overflow-hidden">

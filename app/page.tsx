@@ -408,19 +408,19 @@ export default function Home() {
                 </div>
               </div>
               {showSummary && latestProfile && !isCallActive && (
-                <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 overflow-y-auto fade-in">
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-lg z-50 overflow-y-auto blur-in">
                   <div className="min-h-screen px-4 py-12 flex items-center justify-center">
                     <div className="relative w-full max-w-5xl">
                       <div className="sticky top-4 flex justify-end mb-4 fade-in-up delay-100">
                         <button
                           onClick={() => setShowSummary(false)}
-                          className="bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 hover:text-white px-4 py-2 rounded-full flex items-center transition-all duration-300"
+                          className="apple-button-secondary hover:bg-gray-700/50 text-gray-300 hover:text-white flex items-center transition-all duration-300"
                         >
                           <span className="mr-2">Close Summary</span>
                           <XCircle size={20} />
                         </button>
                       </div>
-                      <div className="bg-black/50 rounded-xl p-6 fade-in-up delay-200">
+                      <div className="apple-glass-effect p-6 fade-in-up delay-200">
                         <ConversationSummary 
                           profile={latestProfile}
                           onSearchJobs={handleSearchJobs}

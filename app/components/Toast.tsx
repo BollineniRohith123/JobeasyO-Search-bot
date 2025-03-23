@@ -31,26 +31,26 @@ export default function Toast({ message, type, duration = 3000, onClose }: Toast
   const getIcon = () => {
     switch (type) {
       case 'success':
-        return <CheckCircle2 size={20} className="text-green-400" />;
+        return <CheckCircle2 size={20} className="text-[rgba(var(--apple-green),1)]" />;
       case 'error':
-        return <AlertCircle size={20} className="text-red-400" />;
+        return <AlertCircle size={20} className="text-[rgba(var(--apple-red),1)]" />;
       case 'warning':
-        return <AlertTriangle size={20} className="text-yellow-400" />;
+        return <AlertTriangle size={20} className="text-[rgba(var(--apple-yellow),1)]" />;
       default:
-        return <Info size={20} className="text-blue-400" />;
+        return <Info size={20} className="text-[rgba(var(--apple-blue),1)]" />;
     }
   };
 
   const getBgColor = () => {
     switch (type) {
       case 'success':
-        return 'bg-green-500/10 border-green-500/30';
+        return 'bg-[rgba(var(--apple-green),0.1)] border-[rgba(var(--apple-green),0.2)]';
       case 'error':
-        return 'bg-red-500/10 border-red-500/30';
+        return 'bg-[rgba(var(--apple-red),0.1)] border-[rgba(var(--apple-red),0.2)]';
       case 'warning':
-        return 'bg-yellow-500/10 border-yellow-500/30';
+        return 'bg-[rgba(var(--apple-yellow),0.1)] border-[rgba(var(--apple-yellow),0.2)]';
       default:
-        return 'bg-blue-500/10 border-blue-500/30';
+        return 'bg-[rgba(var(--apple-blue),0.1)] border-[rgba(var(--apple-blue),0.2)]';
     }
   };
 
@@ -63,8 +63,9 @@ export default function Toast({ message, type, duration = 3000, onClose }: Toast
       `}
     >
       <div className={`
-        flex items-center gap-3 px-4 py-3 rounded-lg border backdrop-blur
+        flex items-center gap-3 px-4 py-3 rounded-lg border backdrop-blur-xl
         ${getBgColor()}
+        scale-in
       `}>
         {getIcon()}
         <p className="text-gray-200">{message}</p>
@@ -73,7 +74,7 @@ export default function Toast({ message, type, duration = 3000, onClose }: Toast
             setIsExiting(true);
             setTimeout(onClose, 300);
           }}
-          className="p-1 hover:bg-white/10 rounded transition-colors"
+          className="p-1 hover:bg-white/10 rounded-full transition-colors"
         >
           <X size={16} className="text-gray-400" />
         </button>
