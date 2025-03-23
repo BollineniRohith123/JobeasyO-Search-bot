@@ -20,7 +20,8 @@ export async function OPTIONS() {
 export async function POST(req: NextRequest) {
   try {
     // Check API key first
-    const apiKey = process.env.NEXT_PUBLIC_PERPLEXITY_API_KEY;
+    const apiKey = process.env.PERPLEXITY_API_KEY;
+    
     if (!apiKey) {
       console.error('Perplexity API key not found in environment variables');
       return NextResponse.json(
@@ -57,6 +58,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    console.log('Received profile:', profile);
+
+    // Add suggested roles to preferred roles if available
+    const enrichedProfile = {
+      ...profile,
+      preferredRoles: [
+        ...(profile.targetRoles || []),
+        ...(profile.preferredRoles || [])
+      ],
+      techStack: [
+        ...(profile.techStack || []),
+        ...(profile.skills || [])
+      ]
+    };
+
+    console.log('Enriched profile for job search:', enrichedProfile);
+
     // Initialize job search service
     const jobSearchService = new PerplexityService({
       apiKey,
@@ -79,7 +97,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Search for jobs
-    const results = await jobSearchService.searchJobs(profile);
+    const results = await jobSearchService.searchJobs(enrichedProfile);
     
     // Validate results
     if (!Array.isArray(results)) {
@@ -124,14 +142,15 @@ export async function POST(req: NextRequest) {
     
     const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
     const isAuthError = error instanceof Error && (
-      error.message.includes('API key') || 
-      error.message.includes('authentication') || 
-      error.message.includes('401')
+      errorMessage.includes('API key') || 
+      errorMessage.includes('authentication') || 
+      errorMessage.includes('401') ||
+      errorMessage.includes('403')
     );
 
     // Set appropriate status code and message
     const status = isAuthError ? 401 : 
-      error instanceof Error && error.message.includes('Rate limit') ? 429 : 500;
+      error instanceof Error && errorMessage.includes('Rate limit') ? 429 : 500;
     
     const message = isAuthError 
       ? 'Job search service authentication failed. Please try again later.'
@@ -142,7 +161,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: message
+        error: message,
+        details: errorMessage
       },
       { status }
     );
