@@ -211,11 +211,7 @@ export default function Home() {
         };
         
         setLatestProfile(updatedProfile);
-        
-        const profileUpdateEvent = new CustomEvent('jobProfileUpdated', {
-          detail: JSON.stringify(updatedProfile.profile)
-        });
-        window.dispatchEvent(profileUpdateEvent);
+        // Removed the recursive event dispatch that was causing infinite loop
       } catch (error) {
         console.error('Error parsing profile data:', error);
         showToast('Error updating profile', 'error');

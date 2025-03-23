@@ -3,19 +3,9 @@ import { Building, MapPin, FileText, ListChecks, CircleDollarSign, Briefcase, Al
 import GradientText from './GradientText';
 import LoadingDots from './LoadingDots';
 import type { JobProfileItem } from '@/lib/types';
-import { PerplexityService } from '../services/perplexity';
 import JobSearchResults from './JobSearchResults';
 import type { JobMatch, PerplexityApiStatus } from '../types/perplexity';
 import PerplexityApiTester from './PerplexityApiTester';
-
-// Load Perplexity API key from environment variable
-const perplexityApiKey = process.env.NEXT_PUBLIC_PERPLEXITY_API_KEY;
-const perplexityService = perplexityApiKey ? new PerplexityService({
-  apiKey: perplexityApiKey,
-  model: 'sonar',
-  temperature: 0.3,
-  maxTokens: 3000
-}) : null;
 
 export default function JobProfile() {
   const [profile, setProfile] = useState<Partial<JobProfileItem>>({});
@@ -25,8 +15,32 @@ export default function JobProfile() {
   const [searchResults, setSearchResults] = useState<JobMatch[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
 
+  const handleJobSearch = async (profile: JobProfileItem) => {
+    try {
+      const response = await fetch('/api/jobs/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(profile),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to search jobs');
+      }
+
+      const results = await response.json();
+      setSearchResults(results);
+    } catch (error) {
+      console.error('Error searching jobs:', error);
+      setSearchError(error instanceof Error ? error.message : 'An error occurred while searching for jobs.');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   const searchJobs = useCallback(async () => {
-    if (!perplexityService || !profileRef.current) {
+    if (!profileRef.current) {
       setSearchError('Job search is not available at this time.');
       return;
     }
@@ -53,8 +67,7 @@ export default function JobProfile() {
         additionalNotes: profileRef.current.additionalNotes || ''
       };
 
-      const results = await perplexityService.searchJobs(fullProfile);
-      setSearchResults(results);
+      await handleJobSearch(fullProfile);
     } catch (error) {
       console.error('Error searching jobs:', error);
       setSearchError(error instanceof Error ? error.message : 'An error occurred while searching for jobs.');

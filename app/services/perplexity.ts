@@ -58,58 +58,80 @@ export class PerplexityService {
   private formatSearchQuery(profile: JobProfileItem): string {
     const queryParts = [];
 
+    // Include both target roles and skills in the query
     if (profile.targetRoles?.length) {
       queryParts.push(`Role: ${profile.targetRoles.join(' or ')}`);
-    } else if (profile.preferredRoles?.length) {
-      queryParts.push(`Role: ${profile.preferredRoles.join(' or ')}`);
     }
     
-    if (profile.yearsOfExperience) {
-      queryParts.push(`Experience: ${profile.yearsOfExperience} years`);
+    const allSkills = [
+      ...(profile.skills || []),
+      ...(profile.techStack || [])
+    ].filter(Boolean);
+    
+    if (allSkills.length) {
+      queryParts.push(`Required Skills: ${allSkills.join(', ')}`);
+    }
+    
+    if (profile.experience || profile.yearsOfExperience) {
+      const years = profile.yearsOfExperience || profile.experience?.match(/(\d+)/)?.[1];
+      if (years) {
+        queryParts.push(`Experience: ${years} years`);
+      }
     }
 
     if (profile.locationPreference) {
       queryParts.push(`Location: ${profile.locationPreference}`);
     }
+    
     if (profile.remotePreference) {
       queryParts.push(`Work Mode: ${profile.remotePreference}`);
     }
 
-    if (profile.techStack?.length) {
-      queryParts.push(`Required Skills: ${profile.techStack.join(', ')}`);
-    }
-    
     if (profile.preferredIndustries?.length) {
       queryParts.push(`Industries: ${profile.preferredIndustries.join(', ')}`);
     }
 
     if (profile.salaryRange && (profile.salaryRange.min > 0 || profile.salaryRange.max > 0)) {
-      queryParts.push(`Salary Range: ${profile.salaryRange.min}-${profile.salaryRange.max} ${profile.salaryRange.currency}`);
+      queryParts.push(`Salary Range: $${profile.salaryRange.min}-$${profile.salaryRange.max}`);
     }
 
     return `
-      Find real and current job opportunities matching these requirements:
+      Find 5 current real job opportunities matching these requirements:
       ${queryParts.join('\n')}
 
-      Return 5 most relevant matches in JSON format with these fields:
-      {
-        "title": "Exact Job Title",
-        "company": "Company Name",
-        "location": "Job Location (City, Remote, etc)",
-        "description": "Brief job description",
-        "requirements": ["Key requirements/skills"],
-        "employmentType": "Full-time/Part-time/Contract",
-        "salary": "Salary range if available",
-        "postedDate": "Job posting date",
-        "applyUrl": "Direct application URL"
-      }
+      Additional focus:
+      - Python development positions
+      - Machine Learning and AI roles
+      - Solution Architect positions
+      - Banking and Finance industry
+      - Texas-based opportunities
+      - Roles matching salary range $50,000-$200,000
 
-      Instructions:
-      1. Focus on active job postings from the last 2 weeks
-      2. Only include real companies and positions
-      3. Prioritize direct application links
-      4. Use company career pages when direct links aren't available
-      5. Ensure accurate job titles and company names
+      Respond ONLY with a valid, parseable JSON array containing job listings. 
+      Each job MUST have this exact format:
+      [
+        {
+          "title": "Exact Job Title",
+          "company": "Company Name",
+          "location": "Job Location",
+          "description": "Brief job description",
+          "requirements": ["Key requirement 1", "Key requirement 2"],
+          "employmentType": "Full-time",
+          "salary": "Salary range if available",
+          "postedDate": "Job posting date",
+          "applyUrl": "Direct application URL"
+        }
+      ]
+
+      Important instructions:
+      1. Format as a valid, parseable JSON ARRAY
+      2. Focus on active job postings only
+      3. Include ONLY real jobs from real companies
+      4. Do not include any text before or after the JSON array
+      5. Ensure all URLs are properly formatted
+      6. Focus on roles in Texas or remote positions
+      7. Prioritize Python, Machine Learning, and Solution Architect roles
+      8. Include positions in Banking/Finance sector when available
     `;
   }
 
@@ -121,29 +143,73 @@ export class PerplexityService {
       }
 
       const content = response.choices[0].message.content;
+      console.log('Raw API response content:', content);
+      
       let jobs: any[] = [];
+      let parsedContent: any;
 
       try {
-        const match = content.match(/\[[\s\S]*?\]/);
-        if (match) {
-          jobs = JSON.parse(match[0]);
-        } else {
-          jobs = JSON.parse(content);
+        // First try to clean the content by ensuring proper JSON structure
+        const cleanedContent = content
+          .replace(/}\s*,\s*\]/g, '}]') // Fix trailing commas
+          .replace(/,\s*([}\]])/g, '$1') // Remove trailing commas
+          .replace(/([{\[]\s*),/g, '$1') // Remove leading commas
+          .replace(/\[\s*,/g, '[') // Remove commas after opening brackets
+          .replace(/,\s*\]/g, ']'); // Remove commas before closing brackets
+        
+        // Try to extract a complete JSON array
+        const arrayMatch = cleanedContent.match(/\[\s*\{[\s\S]*?\}\s*\]/);
+        if (arrayMatch) {
+          try {
+            parsedContent = JSON.parse(arrayMatch[0]);
+            if (Array.isArray(parsedContent)) {
+              jobs = parsedContent;
+            }
+          } catch (e) {
+            console.warn('Failed to parse matched array:', e);
+          }
+        }
+
+        // If array parsing failed, try to parse individual job objects
+        if (jobs.length === 0) {
+          const jobObjects = cleanedContent.match(/\{[^{}]*\}/g) || [];
+          jobs = jobObjects
+            .map(obj => {
+              try {
+                return JSON.parse(obj);
+              } catch (e) {
+                return null;
+              }
+            })
+            .filter(job => job !== null);
+        }
+
+        // If still no jobs, try the fallback parser
+        if (jobs.length === 0) {
+          return this.fallbackParser(content);
         }
       } catch (error) {
-        console.warn('Could not parse JSON from response, using fallback parser');
+        console.warn('Error during JSON parsing:', error);
         return this.fallbackParser(content);
       }
 
-      if (!Array.isArray(jobs)) {
-        console.warn('Response is not an array:', jobs);
-        return [];
-      }
-
-      return jobs
+      // Clean and validate the jobs
+      const validJobs = jobs
         .filter(job => job && typeof job === 'object')
-        .map(job => this.validateAndCleanJobEntry(job))
-        .filter(job => job.title !== 'Unknown Position' && job.company !== 'Unknown Company');
+        .map(job => {
+          // Ensure requirements array is properly formatted
+          if (job.requirements && typeof job.requirements === 'string') {
+            job.requirements = job.requirements.split(',').map((r: string) => r.trim());
+          }
+          return this.validateAndCleanJobEntry(job);
+        })
+        .filter(job => 
+          job.title !== 'Unknown Position' && 
+          job.company !== 'Unknown Company' && 
+          job.company !== 'Not specified'  // Filter out jobs with unspecified companies
+        );
+
+      return validJobs;
     } catch (error) {
       console.error('Error parsing response:', error);
       return [];
@@ -178,32 +244,56 @@ export class PerplexityService {
   }
 
   private fallbackParser(content: string): JobMatch[] {
+    console.log('Using fallback parser on content:', content.substring(0, 200) + '...');
+    
     const jobs: JobMatch[] = [];
-    const jobBlocks = content.split(/\d+\.\s+/).filter(block => block.trim());
+    
+    // Try to extract job information using various patterns
+    const jobPatterns = [
+      // Pattern 1: JSON-like format
+      /\{\s*"title":\s*"([^"]+)",\s*"company":\s*"([^"]+)"/g,
+      // Pattern 2: Key-value format
+      /Title:\s*([^\n]+)[\s\S]*?Company:\s*([^\n]+)/g,
+      // Pattern 3: Numbered list format
+      /\d+\.\s*([^(]+)\s*\(([^)]+)\)/g
+    ];
 
-    for (const block of jobBlocks) {
-      try {
-        const title = block.match(/Title:\s*([^\n]+)/)?.[1] || 'Unknown Position';
-        const company = block.match(/Company:\s*([^\n]+)/)?.[1] || 'Unknown Company';
-        const location = block.match(/Location:\s*([^\n]+)/)?.[1];
-        const description = block.match(/Description:\s*([^\n]+)/)?.[1];
-        const salary = block.match(/Salary:\s*([^\n]+)/)?.[1];
-        const employmentType = block.match(/Type:\s*([^\n]+)/)?.[1];
-        const applyUrl = block.match(/URL:\s*([^\n]+)/)?.[1];
+    for (const pattern of jobPatterns) {
+      const matches = Array.from(content.matchAll(pattern));
+      if (matches.length > 0) {
+        for (const match of matches) {
+          const title = match[1]?.trim();
+          const company = match[2]?.trim();
+          
+          if (title && company && company !== 'Not specified') {
+            // Extract location if available
+            const locationMatch = content.match(new RegExp(`${title}[\\s\\S]*?location"?:\\s*"([^"\\n]+)"`));
+            const location = locationMatch?.[1];
 
-        if (title !== 'Unknown Position' && company !== 'Unknown Company') {
-          jobs.push({
-            title,
-            company,
-            location,
-            description,
-            salary,
-            employmentType,
-            applyUrl: applyUrl || `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(`${title} ${company}`)}`
-          });
+            // Extract description if available
+            const descMatch = content.match(new RegExp(`${title}[\\s\\S]*?description"?:\\s*"([^"\\n]+)"`));
+            const description = descMatch?.[1];
+
+            // Extract requirements if available
+            const reqMatch = content.match(new RegExp(`${title}[\\s\\S]*?requirements"?:\\s*\\[([^\\]]+)\\]`));
+            const requirements = reqMatch ? 
+              reqMatch[1].split(',').map(r => r.trim().replace(/"/g, '')) : 
+              undefined;
+
+            jobs.push({
+              title,
+              company,
+              location,
+              description,
+              requirements,
+              employmentType: 'Full-time', // Default value
+              applyUrl: `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(`${title} ${company}`)}`
+            });
+          }
         }
-      } catch (error) {
-        console.warn('Error parsing job block:', error);
+        
+        // If we found any jobs with this pattern, break the loop
+        if (jobs.length > 0) break;
       }
     }
 
@@ -265,8 +355,9 @@ export class PerplexityService {
       const data: PerplexityResponse = await response.json();
       const jobs = await this.parseResponse(data);
 
+      // Log an informational message instead of throwing an error
       if (jobs.length === 0) {
-        throw new Error('No matching jobs found. Try adjusting your search criteria.');
+        console.warn('No matching jobs found for the given search criteria');
       }
 
       this.apiStatus.isOperational = true;
