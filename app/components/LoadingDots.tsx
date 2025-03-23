@@ -7,7 +7,7 @@ interface LoadingDotsProps {
 
 export default function LoadingDots({ 
   size = 2, 
-  color = 'bg-blue-400' 
+  color = 'bg-[rgba(var(--apple-blue),1)]' 
 }: LoadingDotsProps) {
   return (
     <div className="flex items-center justify-center space-x-2">
@@ -31,7 +31,7 @@ export default function LoadingDots({
 
 export function LoadingBar({
   progress = -1,
-  color = 'bg-blue-400',
+  color = 'bg-[rgba(var(--apple-blue),1)]',
   height = 2
 }: {
   progress?: number;
@@ -42,7 +42,7 @@ export function LoadingBar({
 
   return (
     <div 
-      className={`w-full bg-gray-800 rounded-full overflow-hidden`}
+      className="w-full bg-gray-800/50 backdrop-blur-sm rounded-full overflow-hidden"
       style={{ height: `${height}px` }}
     >
       <div

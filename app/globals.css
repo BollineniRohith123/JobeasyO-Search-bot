@@ -355,23 +355,115 @@
 /* For dark scrollbars */
 @media (prefers-color-scheme: dark) {
   .scrollbar-visible {
-    scrollbar-color: #444 #1a1a1a;
-  }
-
-  .scrollbar-visible::-webkit-scrollbar {
-    background-color: #1a1a1a;
+    scrollbar-color: rgba(var(--apple-gray2), 0.3) transparent;
   }
 
   .scrollbar-visible::-webkit-scrollbar-thumb {
-    background-color: #444;
-    border: 3px solid #1a1a1a;
+    background-color: rgba(var(--apple-gray2), 0.3);
   }
 
   .scrollbar-visible::-webkit-scrollbar-thumb:hover {
-    background-color: #666;
+    background-color: rgba(var(--apple-gray), 0.5);
   }
+}
 
-  .scrollbar-visible::-webkit-scrollbar-track {
-    background-color: #1a1a1a;
+/* Apple-inspired UI elements */
+.apple-card {
+  @apply bg-black/80 backdrop-blur-xl border border-gray-800/50 rounded-2xl;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
+.apple-button {
+  @apply px-6 py-3 rounded-full font-medium transition-all duration-300 transform;
+  background: rgba(var(--apple-blue), 1);
+  box-shadow: 0 2px 8px rgba(var(--apple-blue), 0.3);
+}
+
+.apple-button:hover {
+  @apply scale-105;
+  background: rgba(var(--apple-blue), 0.9);
+  box-shadow: 0 4px 12px rgba(var(--apple-blue), 0.4);
+}
+
+.apple-button-secondary {
+  @apply px-6 py-3 rounded-full font-medium transition-all duration-300 transform;
+  background: rgba(var(--apple-gray4), 0.2);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(var(--apple-gray3), 0.2);
+}
+
+.apple-button-secondary:hover {
+  @apply scale-105;
+  background: rgba(var(--apple-gray4), 0.3);
+}
+
+.apple-input {
+  @apply bg-gray-900/50 border border-gray-800/50 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all duration-300;
+  backdrop-filter: blur(10px);
+}
+
+.apple-glass-effect {
+  @apply bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
+.apple-glass-card {
+  @apply bg-gray-900/30 backdrop-blur-xl border border-gray-800/30 rounded-2xl;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
+.apple-glass-card-hover:hover {
+  @apply border-blue-500/30 bg-gray-900/40;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.apple-section {
+  @apply p-6 mb-6 apple-glass-card apple-glass-card-hover transition-all duration-500;
+}
+
+/* Refined animations */
+@keyframes subtle-float {
+  0% {
+    transform: translateY(0px);
   }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.animate-subtle-float {
+  animation: subtle-float 4s ease-in-out infinite;
+}
+
+@keyframes scale-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.scale-in {
+  animation: scale-in 0.3s ease-out forwards;
+}
+
+@keyframes blur-in {
+  0% {
+    opacity: 0;
+    filter: blur(10px);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+.blur-in {
+  animation: blur-in 0.5s ease-out forwards;
 }

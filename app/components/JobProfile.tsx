@@ -324,8 +324,8 @@ export default function JobProfile() {
           </div>
         </div>
         {/* Status Indicator */}
-        <div className="bg-gradient-to-r from-blue-900/20 via-purple-900/20 to-blue-900/20 p-3 text-center">
-          <LoadingDots size={2} color="bg-blue-400" />
+        <div className="bg-gradient-to-r from-[rgba(var(--apple-blue),0.1)] via-[rgba(var(--apple-purple),0.1)] to-[rgba(var(--apple-blue),0.1)] p-3 text-center">
+          <LoadingDots size={2} color="bg-[rgba(var(--apple-blue),0.8)]" />
           <p className="text-xs text-gray-400 mt-2">Listening for updates...</p>
         </div>
       </div>

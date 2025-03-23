@@ -56,11 +56,11 @@ export default function MicToggleButton({ role }: MicToggleButtonProps) {
     <button
       onClick={toggleMic}
       className={`
-        relative flex-grow flex items-center justify-center h-10 rounded-md border
+        relative flex-grow flex items-center justify-center h-10 rounded-md backdrop-blur-sm
         transition-all duration-300 group
         ${isMuted 
-          ? 'bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20' 
-          : 'bg-green-500/10 border-green-500/30 text-green-400 hover:bg-green-500/20'
+          ? 'bg-[rgba(var(--apple-red),0.1)] border border-[rgba(var(--apple-red),0.2)] text-[rgba(var(--apple-red),0.9)] hover:bg-[rgba(var(--apple-red),0.15)]' 
+          : 'bg-[rgba(var(--apple-green),0.1)] border border-[rgba(var(--apple-green),0.2)] text-[rgba(var(--apple-green),0.9)] hover:bg-[rgba(var(--apple-green),0.15)]'
         }
         ${isAnimating ? 'scale-95' : 'scale-100'}
       `}
@@ -71,12 +71,12 @@ export default function MicToggleButton({ role }: MicToggleButtonProps) {
             {isMuted ? (
               <>
                 <MicOffIcon size={20} />
-                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[rgba(var(--apple-red),1)] animate-pulse" />
               </>
             ) : (
               <>
                 <MicIcon size={20} />
-                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[rgba(var(--apple-green),1)] animate-pulse" />
               </>
             )}
           </div>
@@ -85,12 +85,12 @@ export default function MicToggleButton({ role }: MicToggleButtonProps) {
             {isMuted ? (
               <>
                 <VolumeOffIcon size={20} />
-                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[rgba(var(--apple-red),1)] animate-pulse" />
               </>
             ) : (
               <>
                 <Volume2Icon size={20} />
-                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[rgba(var(--apple-green),1)] animate-pulse" />
               </>
             )}
           </div>
@@ -100,14 +100,14 @@ export default function MicToggleButton({ role }: MicToggleButtonProps) {
         </span>
       </div>
 
-      {/* Ripple effect on hover */}
+      {/* Subtle glass effect */}
       <div className="absolute inset-0 overflow-hidden rounded-md pointer-events-none">
         <div className={`
           absolute inset-0 transform scale-0 group-hover:scale-100 
-          transition-transform duration-700 ease-out rounded-md 
+          transition-transform duration-700 ease-out rounded-md backdrop-blur-sm
           ${isMuted 
-            ? 'bg-red-400/5' 
-            : 'bg-green-400/5'
+            ? 'bg-[rgba(var(--apple-red),0.05)]' 
+            : 'bg-[rgba(var(--apple-green),0.05)]'
           }
         `} />
       </div>
@@ -117,8 +117,8 @@ export default function MicToggleButton({ role }: MicToggleButtonProps) {
         absolute -inset-0.5 rounded-lg pointer-events-none
         transition-opacity duration-300
         ${isMuted 
-          ? 'ring-2 ring-red-500/30 ring-offset-0' 
-          : 'ring-2 ring-green-500/30 ring-offset-0'
+          ? 'ring-2 ring-[rgba(var(--apple-red),0.3)] ring-offset-0' 
+          : 'ring-2 ring-[rgba(var(--apple-green),0.3)] ring-offset-0'
         }
         opacity-0 focus-visible:opacity-100
       `} />

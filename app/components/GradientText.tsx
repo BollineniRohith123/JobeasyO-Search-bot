@@ -11,9 +11,9 @@ interface GradientTextProps {
 
 export default function GradientText({
   children,
-  from = 'from-blue-400',
-  via = 'via-purple-400',
-  to = 'to-pink-400',
+  from = 'from-[rgba(var(--apple-blue),1)]',
+  via = 'via-[rgba(var(--apple-purple),1)]',
+  to = 'to-[rgba(var(--apple-pink),1)]',
   className = '',
   animate = false
 }: GradientTextProps) {
@@ -31,26 +31,26 @@ export default function GradientText({
   );
 }
 
-// Preset gradients
+// Preset gradients using Apple colors
 export const presets = {
   primary: {
-    from: 'from-blue-400',
-    via: 'via-purple-400',
-    to: 'to-pink-400'
+    from: 'from-[rgba(var(--apple-blue),1)]',
+    via: 'via-[rgba(var(--apple-purple),1)]',
+    to: 'to-[rgba(var(--apple-pink),1)]'
   },
   success: {
-    from: 'from-green-400',
-    via: 'via-emerald-400',
-    to: 'to-teal-400'
+    from: 'from-[rgba(var(--apple-green),1)]',
+    via: 'via-[rgba(var(--apple-teal),1)]',
+    to: 'to-[rgba(var(--apple-blue),1)]'
   },
   warning: {
-    from: 'from-yellow-400',
-    via: 'via-orange-400',
-    to: 'to-red-400'
+    from: 'from-[rgba(var(--apple-yellow),1)]',
+    via: 'via-[rgba(var(--apple-orange),1)]',
+    to: 'to-[rgba(var(--apple-red),1)]'
   },
   info: {
-    from: 'from-cyan-400',
-    via: 'via-blue-400',
-    to: 'to-indigo-400'
+    from: 'from-[rgba(var(--apple-teal),1)]',
+    via: 'via-[rgba(var(--apple-blue),1)]',
+    to: 'to-[rgba(var(--apple-indigo),1)]'
   }
 };

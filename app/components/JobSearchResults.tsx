@@ -111,7 +111,7 @@ export default function JobSearchResults({ isSearching, results, error }: JobSea
         </div>
 
         {/* Status Footer */}
-        <div className="bg-gradient-to-r from-blue-900/20 via-purple-900/20 to-blue-900/20 p-3 text-center">
+        <div className="bg-gradient-to-r from-[rgba(var(--apple-blue),0.1)] via-[rgba(var(--apple-purple),0.1)] to-[rgba(var(--apple-blue),0.1)] p-3 text-center">
           {isSearching ? (
             <p className="text-xs text-gray-400">
               Finding the best job matches for your profile...
