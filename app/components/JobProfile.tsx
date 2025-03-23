@@ -232,21 +232,24 @@ export default function JobProfile() {
 
   return (
     <>
-      <div className="rounded-lg bg-gray-900/50 border border-gray-800 overflow-hidden transition-all duration-300 hover:border-blue-800/30">
-        <div className="p-4">
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold mb-1">
-              <GradientText>Career Profile</GradientText>
-            </h3>
+      <div className="rounded-xl bg-gray-900/80 backdrop-blur-md border border-gray-800/50 overflow-hidden transition-all duration-300 hover:border-blue-800/30 shadow-lg">
+        <div className="p-5">
+          <div className="mb-5">
+            <div className="flex items-center mb-2">
+              <Award className="w-5 h-5 text-blue-400 mr-2" />
+              <h3 className="text-lg font-semibold">
+                <GradientText>Career Profile</GradientText>
+              </h3>
+            </div>
             <p className="text-gray-400 text-sm">
               Your profile updates in real-time as we discuss your career.
             </p>
           </div>
           <div className="space-y-4 relative">
             {/* Current Status Section */}
-            <div className="flex items-start space-x-3 p-3 bg-gray-900/50 rounded-lg hover:bg-gray-800/50 transition-colors duration-300">
-              <Briefcase className="w-5 h-5 text-blue-400 mt-1" />
-              <div>
+            <div className="flex items-start space-x-3 p-4 bg-gray-900/50 rounded-xl hover:bg-gray-800/50 transition-colors duration-300 border border-gray-800/30 group">
+              <Briefcase className="w-5 h-5 text-blue-400 mt-1 group-hover:scale-110 transition-transform" />
+              <div className="w-full">
                 <h4 className="font-medium text-blue-300">Current Status</h4>
                 <div className="mt-2">
                   {renderCurrentStatus()}
@@ -254,25 +257,25 @@ export default function JobProfile() {
               </div>
             </div>
             {/* Experience Section */}
-            <div className="flex items-start space-x-3 p-3 bg-gray-900/50 rounded-lg hover:bg-gray-800/50 transition-colors duration-300">
-              <FileText className="w-5 h-5 text-blue-400 mt-1" />
-              <div>
+            <div className="flex items-start space-x-3 p-4 bg-gray-900/50 rounded-xl hover:bg-gray-800/50 transition-colors duration-300 border border-gray-800/30 group">
+              <FileText className="w-5 h-5 text-blue-400 mt-1 group-hover:scale-110 transition-transform" />
+              <div className="w-full">
                 <h4 className="font-medium text-blue-300">Experience & Skills</h4>
                 {renderExperienceInfo()}
               </div>
             </div>
             {/* Location Section */}
-            <div className="flex items-start space-x-3 p-3 bg-gray-900/50 rounded-lg hover:bg-gray-800/50 transition-colors duration-300">
-              <MapPin className="w-5 h-5 text-blue-400 mt-1" />
-              <div>
+            <div className="flex items-start space-x-3 p-4 bg-gray-900/50 rounded-xl hover:bg-gray-800/50 transition-colors duration-300 border border-gray-800/30 group">
+              <MapPin className="w-5 h-5 text-blue-400 mt-1 group-hover:scale-110 transition-transform" />
+              <div className="w-full">
                 <h4 className="font-medium text-blue-300">Location & Work Mode</h4>
                 {renderLocationInfo()}
               </div>
             </div>
             {/* Industry Section */}
-            <div className="flex items-start space-x-3 p-3 bg-gray-900/50 rounded-lg hover:bg-gray-800/50 transition-colors duration-300">
-              <Building className="w-5 h-5 text-blue-400 mt-1" />
-              <div>
+            <div className="flex items-start space-x-3 p-4 bg-gray-900/50 rounded-xl hover:bg-gray-800/50 transition-colors duration-300 border border-gray-800/30 group">
+              <Building className="w-5 h-5 text-blue-400 mt-1 group-hover:scale-110 transition-transform" />
+              <div className="w-full">
                 <h4 className="font-medium text-blue-300">Target Industries</h4>
                 {profile.preferredIndustries?.length ? (
                   <p className="text-blue-300 text-sm mt-1">
@@ -286,14 +289,14 @@ export default function JobProfile() {
               </div>
             </div>
             {/* Goals Section */}
-            <div className="flex items-start space-x-3 p-3 bg-gray-900/50 rounded-lg hover:bg-gray-800/50 transition-colors duration-300">
-              <ListChecks className="w-5 h-5 text-blue-400 mt-1" />
-              <div>
+            <div className="flex items-start space-x-3 p-4 bg-gray-900/50 rounded-xl hover:bg-gray-800/50 transition-colors duration-300 border border-gray-800/30 group">
+              <ListChecks className="w-5 h-5 text-blue-400 mt-1 group-hover:scale-110 transition-transform" />
+              <div className="w-full">
                 <h4 className="font-medium text-blue-300">Career Goals</h4>
                 {profile.targetRoles?.length ? (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {profile.targetRoles.map((role, index) => (
-                      <div key={index} className="bg-blue-900/20 text-blue-300 px-2 py-1 rounded text-xs">
+                      <div key={index} className="bg-blue-900/30 text-blue-300 px-3 py-1 rounded-full text-xs border border-blue-800/30 hover:bg-blue-800/40 transition-colors duration-300">
                         {role}
                       </div>
                     ))}
@@ -306,9 +309,9 @@ export default function JobProfile() {
               </div>
             </div>
             {/* Salary Section */}
-            <div className="flex items-start space-x-3 p-3 bg-gray-900/50 rounded-lg hover:bg-gray-800/50 transition-colors duration-300">
-              <CircleDollarSign className="w-5 h-5 text-blue-400 mt-1" />
-              <div>
+            <div className="flex items-start space-x-3 p-4 bg-gray-900/50 rounded-xl hover:bg-gray-800/50 transition-colors duration-300 border border-gray-800/30 group">
+              <CircleDollarSign className="w-5 h-5 text-blue-400 mt-1 group-hover:scale-110 transition-transform" />
+              <div className="w-full">
                 <h4 className="font-medium text-blue-300">Salary Range</h4>
                 {formatSalaryRange(profile.salaryRange) ? (
                   <p className="text-blue-300 text-sm mt-1">
@@ -324,11 +327,17 @@ export default function JobProfile() {
           </div>
         </div>
         {/* Status Indicator */}
-        <div className="bg-gradient-to-r from-blue-900/20 via-purple-900/20 to-blue-900/20 p-3 text-center">
-          <LoadingDots size={2} color="bg-blue-400" />
+        <div className="bg-gradient-to-r from-blue-900/30 via-purple-900/30 to-blue-900/30 p-4 text-center border-t border-blue-900/20">
+          <div className="flex items-center justify-center">
+            <Zap size={16} className="text-blue-400 mr-2 animate-pulse" />
+            <LoadingDots size={2} color="bg-blue-400" />
+          </div>
           <p className="text-xs text-gray-400 mt-2">Listening for updates...</p>
         </div>
       </div>
+
+      {/* Render API Status */}
+      {renderApiStatus()}
 
       {/* Job Search Results */}
       {(isSearching || searchResults.length > 0 || searchError) && (
