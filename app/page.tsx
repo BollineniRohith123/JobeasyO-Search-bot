@@ -1,14 +1,12 @@
 'use client';
 import React, { useState, useCallback, useEffect, useRef, Suspense } from 'react';
 import { useToast } from './context/ToastContext';
-import LoadingScreen, { LoadingSpinner } from './components/LoadingScreen';
+import LoadingScreen from './components/LoadingScreen';
 import { useSearchParams } from 'next/navigation'; 
 import { startCall, endCall } from '@/lib/callFunctions'
 import { CallConfig, SelectedTool, JobProfileData } from '@/lib/types'
 import demoConfig from './demo-config';
 import { Role, Transcript, UltravoxSessionStatus } from 'ultravox-client';
-import BorderedImage from '@/app/components/BorderedImage';
-import UVLogo from '@/public/UVMark-White.svg';
 import CallStatus from './components/CallStatus';
 import MicToggleButton from './components/MicToggleButton';
 import { PhoneOffIcon, Briefcase, Code, MapPin, Building, XCircle } from 'lucide-react';
@@ -16,6 +14,8 @@ import JobProfile from './components/JobProfile';
 import ConversationSummary from './components/ConversationSummary';
 import BackgroundAnimation from './components/BackgroundAnimation';
 import GradientText from './components/GradientText';
+import { JobMatch } from './types/perplexity';
+import JobSearchResults from './components/JobSearchResults';
 
 type SearchParamsProps = {
   showMuteSpeakerButton: boolean;
@@ -29,14 +29,20 @@ type SearchParamsHandlerProps = {
 
 function SearchParamsHandler({ children }: SearchParamsHandlerProps) {
   const searchParams = useSearchParams();
-  const showMuteSpeakerButton = searchParams.get('showSpeakerMute') === 'true';
-  const showUserTranscripts = searchParams.get('showUserTranscripts') === 'true';
+  const showMuteSpeakerButton = searchParams?.get('showSpeakerMute') === 'true';
+  const showUserTranscripts = searchParams?.get('showUserTranscripts') === 'true';
   let modelOverride: string | undefined;
   
-  if (searchParams.get('model')) {
-    modelOverride = "fixie-ai/" + searchParams.get('model');
+  const model = searchParams?.get('model');
+  if (model) {
+    modelOverride = "fixie-ai/" + model;
   }
-  return children({ showMuteSpeakerButton, modelOverride, showUserTranscripts });
+  
+  return children({ 
+    showMuteSpeakerButton: showMuteSpeakerButton || false,
+    modelOverride,
+    showUserTranscripts: showUserTranscripts || false
+  });
 }
 
 export default function Home() {
@@ -49,6 +55,13 @@ export default function Home() {
   const [latestProfile, setLatestProfile] = useState<JobProfileData | null>(null);
   const transcriptContainerRef = useRef<HTMLDivElement>(null);
   const [showFloatingButton, setShowFloatingButton] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isEndingCall, setIsEndingCall] = useState(false);
+  
+  // Job search related states
+  const [isSearchingJobs, setIsSearchingJobs] = useState(false);
+  const [jobResults, setJobResults] = useState<JobMatch[]>([]);
+  const [jobSearchError, setJobSearchError] = useState<string | undefined>();
 
   useEffect(() => {
     if (transcriptContainerRef.current) {
@@ -72,7 +85,6 @@ export default function Home() {
     } else {
       setAgentStatus('off');
     }
-    
   }, []);
 
   const handleTranscriptChange = useCallback((transcripts: Transcript[] | undefined) => {
@@ -115,6 +127,7 @@ export default function Home() {
         onTranscriptChange: handleTranscriptChange
       }, callConfig);
       setIsCallActive(true);
+      setIsEndingCall(false);
       handleStatusChange('Call started successfully');
       showToast('Career conversation started successfully', 'success');
     } catch (error) {
@@ -126,6 +139,7 @@ export default function Home() {
 
   const handleEndCallButtonClick = async () => {
     try {
+      setIsEndingCall(true);
       handleStatusChange('Ending call...');
       await endCall();
       setIsCallActive(false);
@@ -136,6 +150,52 @@ export default function Home() {
       const errorMessage = error instanceof Error ? error.message : String(error);
       handleStatusChange(`Error ending call: ${errorMessage}`);
       showToast(`Failed to end conversation: ${errorMessage}`, 'error');
+      setIsEndingCall(false);
+    }
+  };
+
+  const handleSearchJobs = async () => {
+    if (!latestProfile || isSearchingJobs) return;
+
+    setIsSearchingJobs(true);
+    setJobSearchError(undefined);
+
+    try {
+      const response = await fetch('/api/jobs/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(latestProfile.profile),
+      });
+
+      if (!response.ok) {
+        throw new Error('Unable to find matching jobs at the moment.');
+      }
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to find matching jobs.');
+      }
+
+      setJobResults(data.jobs);
+      showToast('Found matching job opportunities!', 'success');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to find matching jobs';
+      setJobSearchError(errorMessage);
+      showToast(errorMessage, 'error');
+    } finally {
+      setIsSearchingJobs(false);
+    }
+  };
+
+  const startCallWithLoading = async (modelOverride?: string) => {
+    setIsLoading(true);
+    try {
+      await handleStartCallButtonClick(modelOverride);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -151,8 +211,7 @@ export default function Home() {
         };
         
         setLatestProfile(updatedProfile);
-
-        // Ensure JobProfile component gets the update
+        
         const profileUpdateEvent = new CustomEvent('jobProfileUpdated', {
           detail: JSON.stringify(updatedProfile.profile)
         });
@@ -169,16 +228,13 @@ export default function Home() {
     };
   }, [showToast, latestProfile]);
 
-  const [isLoading, setIsLoading] = useState(false);
-
-  const startCallWithLoading = async (modelOverride?: string) => {
-    setIsLoading(true);
-    try {
-      await handleStartCallButtonClick(modelOverride);
-    } finally {
-      setIsLoading(false);
+  // Add effect to check if call is suddenly disconnected
+  useEffect(() => {
+    if (agentStatus === 'off' && isCallActive && !isEndingCall) {
+      setIsCallActive(false);
+      showToast('Call disconnected unexpectedly. Your profile has been saved.', 'warning');
     }
-  };
+  }, [agentStatus, isCallActive, isEndingCall, showToast]);
 
   return (
     <>
@@ -261,7 +317,7 @@ export default function Home() {
                               type="button"
                               className="flex-grow flex items-center justify-center h-10 bg-red-500/90 hover:bg-red-600/90 rounded-md transition-colors duration-300"
                               onClick={handleEndCallButtonClick}
-                              disabled={!isCallActive}
+                              disabled={!isCallActive || isEndingCall}
                             >
                               <PhoneOffIcon width={24} className="brightness-0 invert" />
                               <span className="ml-2">End Conversation</span>
@@ -280,7 +336,7 @@ export default function Home() {
                               <GradientText animate className="text-5xl">JobeasyO</GradientText>
                             </h2>
                             <p className="text-xl text-gray-400 mb-8 max-w-2xl">
-                              Your AI-powered career assistant is ready to help you find your 
+                              Your career assistant is ready to help you find your 
                               <GradientText className="ml-2 font-semibold">perfect role</GradientText>
                             </p>
                             
@@ -355,7 +411,7 @@ export default function Home() {
                   </CallStatus>
                 </div>
               </div>
-              {showSummary && latestProfile && (
+              {showSummary && latestProfile && !isCallActive && (
                 <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 overflow-y-auto fade-in">
                   <div className="min-h-screen px-4 py-12 flex items-center justify-center">
                     <div className="relative w-full max-w-5xl">
@@ -369,7 +425,18 @@ export default function Home() {
                         </button>
                       </div>
                       <div className="bg-black/50 rounded-xl p-6 fade-in-up delay-200">
-                        <ConversationSummary profile={latestProfile} />
+                        <ConversationSummary 
+                          profile={latestProfile}
+                          onSearchJobs={handleSearchJobs}
+                          isSearchingJobs={isSearchingJobs}
+                        />
+                        {(isSearchingJobs || jobResults.length > 0 || jobSearchError) && (
+                          <JobSearchResults
+                            isSearching={isSearchingJobs}
+                            results={jobResults}
+                            error={jobSearchError}
+                          />
+                        )}
                       </div>
                       <div className="text-center mt-8 text-gray-400 fade-in-up delay-300">
                         <p>Thank you for using JobeasyO! We hope this conversation was helpful.</p>

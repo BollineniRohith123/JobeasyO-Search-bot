@@ -12,6 +12,9 @@ export interface JobMatch {
   description?: string;
   location?: string;
   salary?: string;
+  requirements?: string[];
+  employmentType?: string;
+  postedDate?: string;
 }
 
 export interface PerplexityResponse {

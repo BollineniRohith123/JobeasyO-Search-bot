@@ -2,16 +2,22 @@ import React from 'react';
 import { 
   Briefcase, Code, Building, MapPin,
   Target, Banknote, Network, Monitor,
-  Clock, CheckCircle2 
+  Clock, CheckCircle2, Search 
 } from 'lucide-react';
 import { JobProfileData } from '@/lib/types';
 import GradientText from './GradientText';
 
 interface ConversationSummaryProps {
   profile: JobProfileData;
+  onSearchJobs?: () => void;
+  isSearchingJobs?: boolean;
 }
 
-const ConversationSummary: React.FC<ConversationSummaryProps> = ({ profile }) => {
+const ConversationSummary: React.FC<ConversationSummaryProps> = ({ 
+  profile, 
+  onSearchJobs,
+  isSearchingJobs = false 
+}) => {
   const renderSection = (
     title: string, 
     icon: React.ReactNode, 
@@ -81,10 +87,43 @@ const ConversationSummary: React.FC<ConversationSummaryProps> = ({ profile }) =>
     <div className="w-full max-w-4xl mx-auto fade-in">
       <div className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-blue-800/30 rounded-lg p-6 mb-6 fade-in-up">
         <h2 className="text-3xl font-bold mb-2">
-          <GradientText animate>Conversation Summary</GradientText>
+          <GradientText animate>Career Profile Summary</GradientText>
         </h2>
-        <p className="text-gray-400">Here's a comprehensive summary of our career discussion.</p>
+        <p className="text-gray-400">Based on our conversation, here's your professional profile details.</p>
       </div>
+
+      {/* Get Jobs Button - Top */}
+      {onSearchJobs && (
+        <div className="mb-8 fade-in-up delay-100">
+          <button
+            onClick={onSearchJobs}
+            disabled={isSearchingJobs}
+            className={`
+              w-full px-8 py-4 rounded-xl text-xl font-medium
+              transition-all duration-300 group relative
+              ${isSearchingJobs
+                ? 'bg-blue-900/50 text-blue-300 cursor-not-allowed'
+                : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 text-white hover:from-blue-500 hover:via-indigo-500 hover:to-blue-500'
+              }
+            `}
+          >
+            {isSearchingJobs ? (
+              <span className="flex items-center justify-center">
+                <span className="mr-3">Finding Your Perfect Job Match</span>
+                <div className="w-6 h-6 border-2 border-blue-300 border-t-transparent rounded-full animate-spin" />
+              </span>
+            ) : (
+              <span className="flex items-center justify-center">
+                <Search className="w-6 h-6 mr-2 group-hover:scale-110 transition-transform" />
+                <span>Find Matching Jobs</span>
+              </span>
+            )}
+            {!isSearchingJobs && (
+              <div className="absolute inset-0 bg-blue-400 rounded-xl animate-pulse opacity-20 group-hover:animate-none"></div>
+            )}
+          </button>
+        </div>
+      )}
 
       <div className="space-y-4">
         {/* Current Status */}
@@ -100,7 +139,6 @@ const ConversationSummary: React.FC<ConversationSummaryProps> = ({ profile }) =>
 
         {/* Skills & Tech */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Skills */}
           {renderSection(
             "Skills",
             <Code size={18} className="mr-2" />,
@@ -108,8 +146,6 @@ const ConversationSummary: React.FC<ConversationSummaryProps> = ({ profile }) =>
             profile.profile.skills.length === 0,
             'delay-200'
           )}
-
-          {/* Tech Stack */}
           {renderSection(
             "Tech Stack",
             <Monitor size={18} className="mr-2" />,
@@ -138,7 +174,6 @@ const ConversationSummary: React.FC<ConversationSummaryProps> = ({ profile }) =>
 
         {/* Employment & Location */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Employment Types */}
           {renderSection(
             "Employment Types",
             <Network size={18} className="mr-2" />,
@@ -146,8 +181,6 @@ const ConversationSummary: React.FC<ConversationSummaryProps> = ({ profile }) =>
             profile.profile.employmentTypes.length === 0,
             'delay-300'
           )}
-
-          {/* Location Preferences */}
           {renderSection(
             "Location & Work Mode",
             <MapPin size={18} className="mr-2" />,
@@ -166,7 +199,6 @@ const ConversationSummary: React.FC<ConversationSummaryProps> = ({ profile }) =>
 
         {/* Career Interests */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Industries */}
           {renderSection(
             "Preferred Industries",
             <Building size={18} className="mr-2" />,
@@ -174,8 +206,6 @@ const ConversationSummary: React.FC<ConversationSummaryProps> = ({ profile }) =>
             profile.profile.preferredIndustries.length === 0,
             'delay-300'
           )}
-
-          {/* Salary Expectations */}
           {renderSection(
             "Expected Salary",
             <Banknote size={18} className="mr-2" />,
@@ -185,26 +215,14 @@ const ConversationSummary: React.FC<ConversationSummaryProps> = ({ profile }) =>
           )}
         </div>
 
-        {/* Role Matches */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Target Roles */}
-          {renderSection(
-            "Target Roles",
-            <Target size={18} className="mr-2" />,
-            formatListItems(profile.profile.targetRoles),
-            profile.profile.targetRoles.length === 0,
-            'delay-300'
-          )}
-
-          {/* AI Suggested Roles */}
-          {renderSection(
-            "AI Suggested Roles",
-            <Briefcase size={18} className="mr-2" />,
-            formatListItems(profile.profile.suggestedRoles),
-            profile.profile.suggestedRoles.length === 0,
-            'delay-300'
-          )}
-        </div>
+        {/* Target Roles */}
+        {renderSection(
+          "Target Roles",
+          <Target size={18} className="mr-2" />,
+          formatListItems(profile.profile.targetRoles),
+          profile.profile.targetRoles.length === 0,
+          'delay-300'
+        )}
 
         {/* Additional Notes */}
         {profile.profile.additionalNotes && renderSection(

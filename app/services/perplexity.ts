@@ -1,4 +1,4 @@
-import { PerplexityConfig, PerplexityResponse, JobMatch } from '../types/perplexity';
+import { PerplexityConfig, PerplexityResponse, JobMatch, PerplexityTestResult } from '../types/perplexity';
 import { JobProfileItem } from '@/lib/types';
 
 export class PerplexityService {
@@ -7,89 +7,218 @@ export class PerplexityService {
     isOperational: false,
     lastChecked: null
   };
+  private maxRetries = 2;
+  private timeout = 30000; // 30 seconds
 
   constructor(config: PerplexityConfig) {
     this.config = config;
   }
 
+  private async fetchWithTimeout(url: string, options: RequestInit, timeout: number): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal
+      });
+      return response;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  private async retryFetch(url: string, options: RequestInit): Promise<Response> {
+    let lastError: Error | null = null;
+    
+    for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
+      try {
+        const response = await this.fetchWithTimeout(url, options, this.timeout);
+        if (response.ok || response.status === 401) { // Don't retry auth errors
+          return response;
+        }
+        lastError = new Error(`HTTP error! status: ${response.status}`);
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error('Network request failed');
+        if (error instanceof Error && error.name === 'AbortError') {
+          throw new Error('Request timed out. Please try again.');
+        }
+        // Only retry on network errors, not timeouts
+        if (attempt === this.maxRetries) {
+          throw lastError;
+        }
+        // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+      }
+    }
+    throw lastError || new Error('Maximum retries exceeded');
+  }
+
   private formatSearchQuery(profile: JobProfileItem): string {
-    const parts = [];
+    const queryParts = [];
 
     if (profile.targetRoles?.length) {
-      parts.push(`Looking for roles as: ${profile.targetRoles.join(', ')}`);
+      queryParts.push(`Role: ${profile.targetRoles.join(' or ')}`);
+    } else if (profile.preferredRoles?.length) {
+      queryParts.push(`Role: ${profile.preferredRoles.join(' or ')}`);
     }
-    if (profile.techStack?.length) {
-      parts.push(`Skills: ${profile.techStack.join(', ')}`);
-    }
+    
     if (profile.yearsOfExperience) {
-      parts.push(`Experience: ${profile.yearsOfExperience} years`);
+      queryParts.push(`Experience: ${profile.yearsOfExperience} years`);
     }
+
     if (profile.locationPreference) {
-      const location = profile.remotePreference 
-        ? `${profile.locationPreference} (${profile.remotePreference})`
-        : profile.locationPreference;
-      parts.push(`Location: ${location}`);
+      queryParts.push(`Location: ${profile.locationPreference}`);
     }
+    if (profile.remotePreference) {
+      queryParts.push(`Work Mode: ${profile.remotePreference}`);
+    }
+
+    if (profile.techStack?.length) {
+      queryParts.push(`Required Skills: ${profile.techStack.join(', ')}`);
+    }
+    
     if (profile.preferredIndustries?.length) {
-      parts.push(`Industries: ${profile.preferredIndustries.join(', ')}`);
+      queryParts.push(`Industries: ${profile.preferredIndustries.join(', ')}`);
     }
-    if (profile.salaryRange?.min || profile.salaryRange?.max) {
-      const salary = [];
-      if (profile.salaryRange.min) salary.push(`min ${profile.salaryRange.currency}${profile.salaryRange.min}`);
-      if (profile.salaryRange.max) salary.push(`max ${profile.salaryRange.currency}${profile.salaryRange.max}`);
-      parts.push(`Salary: ${salary.join(' - ')}`);
+
+    if (profile.salaryRange && (profile.salaryRange.min > 0 || profile.salaryRange.max > 0)) {
+      queryParts.push(`Salary Range: ${profile.salaryRange.min}-${profile.salaryRange.max} ${profile.salaryRange.currency}`);
     }
 
     return `
-      Find current job openings for a candidate with:
-      ${parts.join('\n')}
-      
-      Return ONLY job postings with direct application links.
-      Format results as a JSON array of objects with EXACTLY these fields:
+      Find real and current job opportunities matching these requirements:
+      ${queryParts.join('\n')}
+
+      Return 5 most relevant matches in JSON format with these fields:
       {
-        "title": "Job Title",
+        "title": "Exact Job Title",
         "company": "Company Name",
+        "location": "Job Location (City, Remote, etc)",
+        "description": "Brief job description",
+        "requirements": ["Key requirements/skills"],
+        "employmentType": "Full-time/Part-time/Contract",
+        "salary": "Salary range if available",
+        "postedDate": "Job posting date",
         "applyUrl": "Direct application URL"
       }
-      
-      Return at most 10 most relevant jobs, focusing on active listings.
+
+      Instructions:
+      1. Focus on active job postings from the last 2 weeks
+      2. Only include real companies and positions
+      3. Prioritize direct application links
+      4. Use company career pages when direct links aren't available
+      5. Ensure accurate job titles and company names
     `;
   }
 
   private async parseResponse(response: PerplexityResponse): Promise<JobMatch[]> {
     try {
+      if (!response.choices?.[0]?.message?.content) {
+        console.warn('Invalid response format:', response);
+        return [];
+      }
+
       const content = response.choices[0].message.content;
       let jobs: any[] = [];
 
       try {
-        jobs = JSON.parse(content);
-      } catch {
-        const match = content.match(/\[[\s\S]*\]/);
+        const match = content.match(/\[[\s\S]*?\]/);
         if (match) {
           jobs = JSON.parse(match[0]);
+        } else {
+          jobs = JSON.parse(content);
         }
+      } catch (error) {
+        console.warn('Could not parse JSON from response, using fallback parser');
+        return this.fallbackParser(content);
       }
 
       if (!Array.isArray(jobs)) {
-        throw new Error('Invalid response format');
+        console.warn('Response is not an array:', jobs);
+        return [];
       }
 
-      return jobs.map(job => ({
-        title: job.title || 'Unknown Position',
-        company: job.company || 'Unknown Company',
-        applyUrl: job.applyUrl || '#'
-      }));
+      return jobs
+        .filter(job => job && typeof job === 'object')
+        .map(job => this.validateAndCleanJobEntry(job))
+        .filter(job => job.title !== 'Unknown Position' && job.company !== 'Unknown Company');
     } catch (error) {
-      console.error('Error parsing Perplexity response:', error);
-      throw new Error('Failed to parse job search results');
+      console.error('Error parsing response:', error);
+      return [];
     }
   }
 
+  private validateAndCleanJobEntry(job: any): JobMatch {
+    const cleanUrl = (url: string, company: string, title: string) => {
+      if (typeof url === 'string' && url.startsWith('http')) {
+        try {
+          new URL(url);
+          return url;
+        } catch {
+          // If URL is invalid, fall through to default
+        }
+      }
+      
+      return `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(`${title} ${company}`)}`;
+    };
+
+    return {
+      title: typeof job.title === 'string' ? job.title : 'Unknown Position',
+      company: typeof job.company === 'string' ? job.company : 'Unknown Company',
+      location: typeof job.location === 'string' ? job.location : undefined,
+      description: typeof job.description === 'string' ? job.description : undefined,
+      requirements: Array.isArray(job.requirements) ? job.requirements : undefined,
+      employmentType: typeof job.employmentType === 'string' ? job.employmentType : undefined,
+      salary: typeof job.salary === 'string' ? job.salary : undefined,
+      postedDate: typeof job.postedDate === 'string' ? job.postedDate : undefined,
+      applyUrl: cleanUrl(job.applyUrl || '', job.company || '', job.title || '')
+    };
+  }
+
+  private fallbackParser(content: string): JobMatch[] {
+    const jobs: JobMatch[] = [];
+    const jobBlocks = content.split(/\d+\.\s+/).filter(block => block.trim());
+
+    for (const block of jobBlocks) {
+      try {
+        const title = block.match(/Title:\s*([^\n]+)/)?.[1] || 'Unknown Position';
+        const company = block.match(/Company:\s*([^\n]+)/)?.[1] || 'Unknown Company';
+        const location = block.match(/Location:\s*([^\n]+)/)?.[1];
+        const description = block.match(/Description:\s*([^\n]+)/)?.[1];
+        const salary = block.match(/Salary:\s*([^\n]+)/)?.[1];
+        const employmentType = block.match(/Type:\s*([^\n]+)/)?.[1];
+        const applyUrl = block.match(/URL:\s*([^\n]+)/)?.[1];
+
+        if (title !== 'Unknown Position' && company !== 'Unknown Company') {
+          jobs.push({
+            title,
+            company,
+            location,
+            description,
+            salary,
+            employmentType,
+            applyUrl: applyUrl || `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(`${title} ${company}`)}`
+          });
+        }
+      } catch (error) {
+        console.warn('Error parsing job block:', error);
+      }
+    }
+
+    return jobs;
+  }
+
   public async searchJobs(profile: JobProfileItem): Promise<JobMatch[]> {
+    if (!this.config.apiKey) {
+      throw new Error('API key is required');
+    }
+
     try {
       const query = this.formatSearchQuery(profile);
       
-      const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      const response = await this.retryFetch('https://api.perplexity.ai/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.config.apiKey}`,
@@ -100,53 +229,73 @@ export class PerplexityService {
           messages: [
             {
               role: 'system',
-              content: 'You are a job search assistant that returns results in JSON format with direct application links.'
+              content: 'You are a job search expert. Return detailed job listings in JSON format.'
             },
             {
               role: 'user',
               content: query
             }
           ],
-          max_tokens: this.config.maxTokens || 3000,
+          max_tokens: this.config.maxTokens || 4000,
           temperature: this.config.temperature || 0.3,
           top_p: 0.95,
           search_domain_filter: null,
           return_related_questions: false,
-          search_recency_filter: 'recent'
+          search_recency_filter: 'week'
         })
       });
 
       if (!response.ok) {
-        throw new Error(`API request failed: ${response.statusText}`);
+        const errorBody = await response.text();
+        console.error('API Error:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorBody
+        });
+        
+        if (response.status === 401) {
+          throw new Error('Invalid API key or authentication failed');
+        }
+        if (response.status === 429) {
+          throw new Error('Rate limit exceeded. Please try again later');
+        }
+        throw new Error('Job search service is temporarily unavailable');
       }
 
       const data: PerplexityResponse = await response.json();
-      return await this.parseResponse(data);
+      const jobs = await this.parseResponse(data);
+
+      if (jobs.length === 0) {
+        throw new Error('No matching jobs found. Try adjusting your search criteria.');
+      }
+
+      this.apiStatus.isOperational = true;
+      this.apiStatus.lastChecked = new Date();
+      return jobs;
 
     } catch (error) {
       console.error('Error searching jobs:', error);
-      
-      // Update API status on error
       this.apiStatus.isOperational = false;
       this.apiStatus.lastChecked = new Date();
       
-      throw error;
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Unable to process job search. Please try again later.');
     }
   }
 
-  /**
-   * Test the Perplexity API connection
-   * @returns Object with test results
-   */
-  public async testConnection(): Promise<{
-    isOperational: boolean;
-    message: string;
-    timestamp: Date;
-    details?: any;
-  }> {
+  public async testConnection(): Promise<PerplexityTestResult> {
+    if (!this.config.apiKey) {
+      return {
+        isOperational: false,
+        message: 'API key is required',
+        timestamp: new Date()
+      };
+    }
+
     try {
-      // Simple test query
-      const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      const response = await this.retryFetch('https://api.perplexity.ai/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.config.apiKey}`,
@@ -170,39 +319,35 @@ export class PerplexityService {
       });
 
       if (!response.ok) {
-        throw new Error(`API request failed: ${response.statusText} (${response.status})`);
+        const errorBody = await response.text();
+        throw new Error(`API request failed: ${response.statusText} (${response.status})\n${errorBody}`);
       }
 
       const data = await response.json();
       
-      // Update API status
       this.apiStatus.isOperational = true;
       this.apiStatus.lastChecked = new Date();
       
       return {
         isOperational: true,
-        message: 'Perplexity API connection successful',
+        message: 'Job search service is ready',
         timestamp: new Date(),
         details: data
       };
     } catch (error) {
-      console.error('Perplexity API test failed:', error);
+      console.error('Service test failed:', error);
       
-      // Update API status on error
       this.apiStatus.isOperational = false;
       this.apiStatus.lastChecked = new Date();
       
       return {
         isOperational: false,
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : 'Service connectivity test failed',
         timestamp: new Date()
       };
     }
   }
 
-  /**
-   * Get the current API status
-   */
   public getApiStatus() {
     return {
       ...this.apiStatus,

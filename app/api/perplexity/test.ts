@@ -46,28 +46,27 @@ export async function testJobSearch(apiKey: string): Promise<boolean> {
       maxTokens: 3000
     });
     
-    // Sample profile for testing
+    // Simplified test profile with essential fields only
     const testProfile: JobProfileItem = {
-      skills: ['JavaScript', 'React', 'Node.js'],
-      techStack: ['TypeScript', 'Next.js', 'TailwindCSS'],
-      experience: 'Mid-level',
+      skills: ['JavaScript'],
+      techStack: ['React'],
+      experience: 'Mid-level software developer',
       yearsOfExperience: '3',
-      preferredIndustries: ['Technology', 'Finance'],
-      preferredRoles: ['Frontend Developer', 'Full Stack Developer'],
+      preferredIndustries: ['Technology'],
+      preferredRoles: ['Frontend Developer'],
       employmentTypes: ['Full-time'],
       locationPreference: 'San Francisco',
       remotePreference: 'Remote',
-      salaryRange: { min: 100000, max: 150000, currency: '$' },
-      targetRoles: ['Frontend Developer', 'React Developer'],
+      salaryRange: { min: 0, max: 0, currency: '$' },
+      targetRoles: ['Frontend Developer'],
       suggestedRoles: [],
       currentStatus: 'Actively looking',
-      additionalNotes: 'Looking for a remote position with a good work-life balance'
+      additionalNotes: ''
     };
     
     const results = await perplexityService.searchJobs(testProfile);
     
-    console.log(`Job search returned ${results.length} results`);
-    console.log('First result:', results[0]);
+    console.log('Job search response:', results);
     
     return results.length > 0;
   } catch (error) {
