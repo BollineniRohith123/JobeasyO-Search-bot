@@ -1,25 +1,44 @@
 import React from 'react';
-import LoadingDots from './LoadingDots';
+import { Search, Briefcase, Building } from 'lucide-react';
 
 export default function SearchLoadingAnimation() {
   return (
-    <div className="flex flex-col items-center justify-center py-8 space-y-4">
+    <div className="flex flex-col items-center justify-center">
       <div className="relative">
-        <div className="absolute inset-0 w-16 h-16 rounded-full bg-blue-500/20 animate-pulse"></div>
-        <div className="absolute inset-0 w-16 h-16 rounded-full bg-blue-400/10 animate-ping"></div>
-        <div className="relative z-10">
-          <LoadingDots size={3} color="bg-blue-400" />
+        <div className="flex items-center space-x-2">
+          {/* Animated icons */}
+          <div className="flex items-center justify-center w-8 h-8">
+            <Search 
+              className="w-6 h-6 text-blue-400 absolute animate-ping opacity-75"
+              style={{ animationDuration: '2s' }}
+            />
+            <Search className="w-6 h-6 text-blue-400 relative" />
+          </div>
+          <div className="flex items-center justify-center w-8 h-8">
+            <Briefcase 
+              className="w-6 h-6 text-purple-400 absolute animate-ping opacity-75"
+              style={{ animationDuration: '2s', animationDelay: '0.5s' }}
+            />
+            <Briefcase className="w-6 h-6 text-purple-400 relative" />
+          </div>
+          <div className="flex items-center justify-center w-8 h-8">
+            <Building 
+              className="w-6 h-6 text-blue-400 absolute animate-ping opacity-75"
+              style={{ animationDuration: '2s', animationDelay: '1s' }}
+            />
+            <Building className="w-6 h-6 text-blue-400 relative" />
+          </div>
         </div>
       </div>
-      <div className="space-y-2 text-center">
-        <p className="text-blue-300 font-medium animate-pulse">
-          AI Job Search in Progress
-        </p>
-        <p className="text-gray-400 text-sm flex flex-col items-center space-y-1">
-          <span>Analyzing your profile</span>
-          <span>Matching with opportunities</span>
-          <span>Finding perfect matches</span>
-        </p>
+      <div className="mt-4 flex flex-col items-center space-y-2">
+        <div className="flex items-center space-x-1">
+          <div className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '0s' }} />
+          <div className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '0.2s' }} />
+          <div className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '0.4s' }} />
+        </div>
+        <span className="text-gray-400 text-sm font-medium">
+          Searching for opportunities...
+        </span>
       </div>
     </div>
   );
