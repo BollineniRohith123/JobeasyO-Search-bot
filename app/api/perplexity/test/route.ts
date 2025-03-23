@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runAllTests } from '../test';
 
 // Load Perplexity API key from environment variable
-const perplexityApiKey = process.env.NEXT_PUBLIC_PERPLEXITY_API_KEY;
+const perplexityApiKey = process.env.PERPLEXITY_API_KEY;
 
 export async function GET() {
   try {

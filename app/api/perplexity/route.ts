@@ -3,7 +3,7 @@ import { PerplexityService } from '@/app/services/perplexity';
 import { JobProfileItem } from '@/lib/types';
 
 // Load Perplexity API key from environment variable
-const perplexityApiKey = process.env.NEXT_PUBLIC_PERPLEXITY_API_KEY;
+const perplexityApiKey = process.env.PERPLEXITY_API_KEY;
 
 export async function POST(request: NextRequest) {
   try {
